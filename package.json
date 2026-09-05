@@ -1,0 +1,11 @@
+{
+  "name": "the-absurdity-feed",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.ts"
+  },
+  "engines": {
+    "node": ">=22.18"
+  }
+}

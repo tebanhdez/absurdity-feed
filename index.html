@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6ff4a">
+  <title>The Absurdity Feed</title>
+  <style>
+    :root {
+      --ink: #151515;
+      --paper: #f6ff4a;
+      --accent: #ff5c8a;
+      --shadow: 0.12em 0.12em 0 var(--ink);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { min-height: 100%; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100svh;
+      overflow: hidden;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Arial, Helvetica, system-ui, sans-serif;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: background-color 400ms ease;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.13;
+      background-image: radial-gradient(var(--ink) 0.8px, transparent 0.8px);
+      background-size: 15px 15px;
+    }
+
+    main {
+      min-height: 100vh;
+      min-height: 100svh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: clamp(1.25rem, 3vw, 3rem);
+    }
+
+    header, footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      position: relative;
+      z-index: 2;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .brand {
+      display: inline-block;
+      padding: 0.45rem 0.7rem;
+      border: 3px solid var(--ink);
+      background: #fff;
+      box-shadow: 5px 5px 0 var(--ink);
+      transform: rotate(-1deg);
+    }
+
+    .status { font-size: clamp(0.7rem, 1.3vw, 0.95rem); }
+
+    .stage {
+      display: grid;
+      place-items: center;
+      width: min(92vw, 1500px);
+      margin: auto;
+      padding: 3vh 0;
+    }
+
+    #question {
+      margin: 0;
+      max-width: 25ch;
+      font-size: clamp(2.6rem, 6.6vw, 7.5rem);
+      font-weight: 950;
+      line-height: 0.96;
+      letter-spacing: -0.055em;
+      text-align: center;
+      text-wrap: balance;
+      overflow-wrap: anywhere;
+      filter: drop-shadow(0.045em 0.045em 0 rgba(255, 255, 255, 0.75));
+    }
+
+    #question.pop { animation: pop 360ms cubic-bezier(.2, .8, .2, 1); }
+
+    footer { align-items: end; }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 0.65rem;
+    }
+
+    #rejectButton:hover, #rejectButton:focus-visible { background: #ff6b6b; }
+    button:disabled {
+      cursor: wait;
+      opacity: 0.55;
+    }
+
+    .hint {
+      max-width: 44rem;
+      font-size: clamp(0.65rem, 1vw, 0.82rem);
+      line-height: 1.5;
+    }
+
+    button {
+      appearance: none;
+      border: 3px solid var(--ink);
+      border-radius: 0;
+      padding: 0.7rem 0.9rem;
+      color: var(--ink);
+      background: #fff;
+      box-shadow: 4px 4px 0 var(--ink);
+      font: inherit;
+      font-size: 0.72rem;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    button:hover, button:focus-visible { background: var(--accent); }
+    button:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
+
+    @keyframes pop {
+      from { opacity: 0; transform: translateY(18px) rotate(-1deg) scale(0.97); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @media (max-width: 640px) {
+      main { padding: 1rem; }
+      header { align-items: flex-start; }
+      footer { align-items: flex-end; gap: 0.75rem; }
+      .hint { max-width: 20rem; }
+      .controls { max-width: 12rem; }
+      #question { font-size: clamp(2.35rem, 12vw, 4.5rem); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      body { transition: none; }
+      #question.pop { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <main aria-live="polite">
+    <header>
+      <span class="brand">The Absurdity Feed</span>
+      <span class="status" id="status">Question 1</span>
+    </header>
+
+    <section class="stage">
+      <h1 id="question">Why do dogs bark at the mailman?</h1>
+    </section>
+
+    <footer>
+      <span class="hint">Approve + next: Space · Reject + next: X · Skip: click/Enter/→ · New AI: G · Fullscreen: F</span>
+      <div class="controls">
+        <button id="rejectButton" type="button" title="Blacklist this question and remove it now (X)">✕ Reject</button>
+        <button id="autoButton" type="button" aria-pressed="false">Auto: off</button>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    const questions = [
+      "Why do dogs bark at the mailman?",
+      "Is soup considered a drink?",
+      "If a tomato is a fruit, is ketchup a smoothie?",
+      "How long could you survive in a grocery store?",
+      "Why is it called a building when it's already built?",
+      "Do normal people actually use the top sheet on a bed?",
+      "Is a hot dog a sandwich?",
+      "If you turn a sock inside out, does the entire universe wear that sock except for you?",
+      "Why do we drive on a parkway and park on a driveway?",
+      "Who decided the letter W should be called double-U instead of double-V?",
+      "If your shirt isn't tucked into your pants, are your pants tucked into your shirt?",
+      "Are there more doors or wheels in the world?",
+      "What color is a mirror?",
+      "If everyone lay down in a line, could we reach the moon?",
+      "Why do we press harder on the remote when the batteries are dying?",
+      "If you rip a hole in a net, does it have fewer holes than before?",
+      "Why is there a light in the fridge but not the freezer?",
+      "What do people do with all the time they save by typing 'k' instead of 'ok'?",
+      "If you drop soap on the floor, is the floor clean or is the soap dirty?",
+      "Why is 'abbreviation' such a long word?",
+      "What was the first person to milk a cow trying to do?",
+      "Is cereal just cold breakfast soup?",
+      "Why do we say 'heads up' when we want people to duck?",
+      "If an orange is orange, why isn't a lime called a green?",
+      "Why do we put round pizzas in square boxes and eat them in triangles?",
+      "If a word is misspelled in the dictionary, how would we ever know?",
+      "Why do you keep looking in the fridge, expecting new food to appear?",
+      "If a fly loses its wings, is it called a walk?",
+      "If a mechanical pencil breaks, did it break or did it just finish?",
+      "Why do 'fat chance' and 'slim chance' mean the same thing?",
+      "Is the S or the C silent in the word 'scent'?",
+      "If you expect the unexpected, doesn't that make the unexpected expected?",
+      "Why do we say we sleep like a baby when babies wake up crying every two hours?",
+      "If a turtle loses its shell, is it naked or homeless?",
+      "If you sink a cruise ship, does it become a submarine?",
+      "Why do people say 'break a leg' to wish someone good luck?",
+      "If a cyclops closes its eye, is it blinking or winking?",
+      "Do they make left-handed mugs?",
+      "If nothing sticks to Teflon, how does Teflon stick to the pan?",
+      "Do birds get mad when we build houses out of dead trees?",
+      "Do fish ever get thirsty?",
+      "If a centipede wears shoes, how long does it take to get ready?",
+      "What do zebras look like under their fur?",
+      "Why do cats stare at empty corners like they see a ghost?",
+      "If a dog could talk, would it have an accent?",
+      "Do penguins have knees?",
+      "If animals could talk, which one would be the rudest?",
+      "Why do horses sleep standing up without falling over?",
+      "Are wild animals just constantly looking for their keys?",
+      "If you travel back in time and delete your internet history, did it happen?",
+      "Are we living in a simulation, and if so, who is running the microwave?",
+      "If a day is 24 hours, why does Monday feel like 48?",
+      "What time is it on the moon right now?",
+      "If you are waiting for the waiter, aren't you technically the waiter?",
+      "If you replace every part of a car, is it still the same car?",
+      "Is today yesterday's tomorrow or tomorrow's yesterday?",
+      "What happens if you use a portal gun on a moving train?",
+      "If you try to fail and succeed, which one did you actually do?",
+      "Why is your alarm sound the most terrifying noise on Earth?",
+      "Which armrest is yours at a movie theater?",
+      "Is a thumb a finger?",
+      "Why is the thumb the only finger without its own ring type?",
+      "If you clean a vacuum cleaner, do you become the vacuum cleaner?",
+      "How does a sponge hold water when it is full of holes?",
+      "Is a waterfall just a river that gave up?",
+      "If finished buildings are called buildings, shouldn't they be called builts?",
+      "If people singing together are a choir, what are people yelling together?",
+      "Why is the alphabet in that order? Is there a reason A comes first?",
+      "If you throw paper in the trash, does it become trash instantly?",
+      "Is lasagna just spaghetti cake?",
+      "Why do we pull a door marked push even after reading the sign?",
+      "How many holes does a straw have: one or two?",
+      "If a key opens a lock, where does the locked-ness go?",
+      "Why do we yawn when we see someone else yawn?",
+      "If you buy a bigger bed, do you have more bed-room but less bedroom?",
+      "Why do we cook bacon and bake cookies?",
+      "If you whisper in a crowded room, does it make it quieter or louder?"
+    ];
+
+    const palettes = [
+      ["#f6ff4a", "#ff5c8a"],
+      ["#ff7a00", "#9effff"],
+      ["#76f7bf", "#8d70ff"],
+      ["#ff8fab", "#ffe66d"],
+      ["#7dd3fc", "#fb7185"],
+      ["#d8b4fe", "#bef264"]
+    ];
+
+    const questionEl = document.querySelector("#question");
+    const statusEl = document.querySelector("#status");
+    const autoButton = document.querySelector("#autoButton");
+    const rejectButton = document.querySelector("#rejectButton");
+    const AUTO_INTERVAL_MS = 3 * 60 * 1000;
+    const STORAGE_KEYS = {
+      approved: "absurdity-feed-approved-v1",
+      rejected: "absurdity-feed-rejected-v1",
+      candidates: "absurdity-feed-candidates-v1"
+    };
+    let queue = [];
+    let fallbackQueue = [];
+    let aiCandidates = loadList(STORAGE_KEYS.candidates);
+    let shown = 1;
+    let autoTimer = null;
+    let isLoading = false;
+    let currentQuestion = questionEl.textContent;
+    const approved = new Set(loadList(STORAGE_KEYS.approved));
+    const rejected = new Set(loadList(STORAGE_KEYS.rejected));
+
+    function loadList(key) {
+      try {
+        const value = JSON.parse(localStorage.getItem(key) || "[]");
+        return Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveList(key, values) {
+      try {
+        localStorage.setItem(key, JSON.stringify([...values]));
+      } catch (error) {
+        console.warn("Could not save moderation data.", error);
+      }
+    }
+
+    function normalize(text) {
+      return text.trim().replace(/\s+/g, " ").toLocaleLowerCase();
+    }
+
+    function shuffle(items) {
+      const copy = items.slice();
+      for (let i = copy.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function refillQueue() {
+      queue = shuffle(questions.slice(1).filter((question) => !rejected.has(normalize(question))));
+    }
+
+    function getFallbackQuestion() {
+      if (fallbackQueue.length === 0) {
+        const safePool = [...questions, ...approved].filter((question) => !rejected.has(normalize(question)));
+        fallbackQueue = shuffle(safePool);
+      }
+      return fallbackQueue.pop() || "Should an empty question bank still contain this question?";
+    }
+
+    function isUsableQuestion(text) {
+      return typeof text === "string" && text.length >= 15 && text.length <= 220 && text.endsWith("?") && !rejected.has(normalize(text));
+    }
+
+    async function getAiQuestion() {
+      if (aiCandidates.length === 0) {
+        const exclude = [...approved, ...rejected, currentQuestion].slice(-150);
+        const response = await fetch("/api/questions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ exclude })
+        });
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(error.message || `Question service returned HTTP ${response.status}`);
+        }
+        const data = await response.json();
+        const seen = new Set([...approved, ...rejected, currentQuestion].map(normalize));
+        aiCandidates = (data.questions || []).filter((question) => isUsableQuestion(question) && !seen.has(normalize(question)));
+        saveList(STORAGE_KEYS.candidates, aiCandidates);
+      }
+      const text = aiCandidates.shift();
+      saveList(STORAGE_KEYS.candidates, aiCandidates);
+      if (!text) throw new Error("The question service returned no usable questions");
+      return { text, source: "Unreviewed AI · OpenRouter" };
+    }
+
+    async function getNextQuestion(forceAi = false) {
+      if (!forceAi && queue.length > 0) {
+        return { text: queue.pop(), source: "Reviewed local question" };
+      }
+      try {
+        return await getAiQuestion();
+      } catch (error) {
+        console.info("Hosted AI unavailable; using the reviewed local bank.", error);
+        return { text: getFallbackQuestion(), source: "Reviewed fallback · AI unavailable" };
+      }
+    }
+
+    async function showNextQuestion(forceAi = false) {
+      if (isLoading) return;
+      isLoading = true;
+      document.body.setAttribute("aria-busy", "true");
+      rejectButton.disabled = true;
+      statusEl.textContent = forceAi || queue.length === 0 ? "Asking AI for weirdness…" : "Finding weirdness…";
+
+      const thought = await getNextQuestion(forceAi);
+      currentQuestion = thought.text;
+      questionEl.textContent = thought.text;
+      shown += 1;
+      statusEl.textContent = `Question ${shown} · ${thought.source}`;
+      isLoading = false;
+      document.body.removeAttribute("aria-busy");
+      rejectButton.disabled = false;
+      saveList(STORAGE_KEYS.candidates, aiCandidates);
+
+      const [paper, accent] = palettes[(shown - 1) % palettes.length];
+      document.documentElement.style.setProperty("--paper", paper);
+      document.documentElement.style.setProperty("--accent", accent);
+
+      questionEl.classList.remove("pop");
+      void questionEl.offsetWidth;
+      questionEl.classList.add("pop");
+    }
+
+    function approveCurrent() {
+      if (isLoading) return;
+      approved.add(currentQuestion);
+      saveList(STORAGE_KEYS.approved, approved);
+      statusEl.textContent = `Question ${shown} · Approved ✓`;
+    }
+
+    async function rejectCurrent() {
+      if (isLoading) return;
+      const key = normalize(currentQuestion);
+      rejected.add(key);
+      approved.forEach((question) => {
+        if (normalize(question) === key) approved.delete(question);
+      });
+      queue = queue.filter((question) => normalize(question) !== key);
+      fallbackQueue = fallbackQueue.filter((question) => normalize(question) !== key);
+      aiCandidates = aiCandidates.filter((question) => normalize(question) !== key);
+      saveList(STORAGE_KEYS.rejected, rejected);
+      saveList(STORAGE_KEYS.approved, approved);
+      saveList(STORAGE_KEYS.candidates, aiCandidates);
+      await showNextQuestion();
+    }
+
+    function toggleAuto() {
+      if (autoTimer) {
+        clearInterval(autoTimer);
+        autoTimer = null;
+      } else {
+        autoTimer = setInterval(showNextQuestion, AUTO_INTERVAL_MS);
+      }
+      const isOn = Boolean(autoTimer);
+      autoButton.textContent = `Auto: ${isOn ? "3 min" : "off"}`;
+      autoButton.setAttribute("aria-pressed", String(isOn));
+    }
+
+    async function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen?.();
+      } else {
+        await document.exitFullscreen?.();
+      }
+    }
+
+    document.addEventListener("click", (event) => {
+      if (event.target.closest("button")) return;
+      showNextQuestion();
+    });
+
+    autoButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      toggleAuto();
+    });
+
+    rejectButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      rejectCurrent();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.code === "Space") {
+        event.preventDefault();
+        approveCurrent();
+        showNextQuestion();
+      } else if (event.code === "Enter" || event.code === "ArrowRight") {
+        event.preventDefault();
+        showNextQuestion();
+      } else if (event.key.toLowerCase() === "a") {
+        toggleAuto();
+      } else if (event.key.toLowerCase() === "g") {
+        showNextQuestion(true);
+      } else if (event.key.toLowerCase() === "x") {
+        rejectCurrent();
+      } else if (event.key.toLowerCase() === "f") {
+        toggleFullscreen();
+      }
+    });
+
+    refillQueue();
+    if (rejected.has(normalize(currentQuestion))) showNextQuestion();
+  </script>
+</body>
+</html>
