@@ -3,8 +3,9 @@ import { readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const HOST = "127.0.0.1";
+const HOST = process.env.HOST || "127.0.0.1";
 const PORT = Number(process.env.PORT || 8080);
+const PUBLIC_URL = process.env.PUBLIC_URL || `http://${HOST}:${PORT}`;
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MODEL = process.env.OPENROUTER_MODEL || "openrouter/free";
 const ROOT = fileURLToPath(new URL(".", import.meta.url));
@@ -64,7 +65,7 @@ Return exactly one question per line with no numbering, commentary, or introduct
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
-      "HTTP-Referer": `http://${HOST}:${PORT}`,
+      "HTTP-Referer": PUBLIC_URL,
       "X-Title": "The Absurdity Feed"
     },
     body: JSON.stringify({
